@@ -15,7 +15,7 @@ class MemberSchema
     @Prop({ type: String, required: true })
         addedBy: IMember['addedBy'];
 
-    @Prop({ type: Date, required: true, default: () => new Date() })
+    @Prop({ type: Date, required: true })
         joinedAt: IMember['joinedAt'];
 }
 
@@ -30,7 +30,7 @@ export class SpaceModel
         icon: ISpace['icon'];
     @Prop({ type: [String], required: true, validate: [(arr: any[]) => arr.length > 0, 'At least one category required'] })
         categories: ISpace['categories'];
-    @Prop({ type: [MemberSchema], required: true, validate: [(arr: any[]) => arr.length > 0, 'At least one member required'] })
+    @Prop({ type: [MemberSchema], required: true, validate: [(arr: any[]) => arr.length > 0 && !!arr.find(m => m.role === 'owner'), 'At least one member required'] })
         members: ISpace['members'];
     @Prop({ type: Boolean, required: true, default: true })
         active: ISpace['active'];

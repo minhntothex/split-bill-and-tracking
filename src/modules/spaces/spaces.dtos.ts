@@ -26,6 +26,7 @@ export const Space = SystemFields.extend({
         ),
     active: z.boolean(),
     closedAt: z.date().optional(),
+    inviteToken: z.string().optional(),
 });
 export type Space = z.infer<typeof Space>
 
@@ -34,7 +35,7 @@ export const GetSpacesParams = Space
     .extend({ take: z.number(), nextToken: z.string().optional() })
     .partial();
 export type GetSpacesParams = z.infer<typeof GetSpacesParams>
-export class GetSpacesParamsDto extends createZodDto(GetSpacesParams) { }
+export class GetSpacesParamsDto extends createZodDto(GetSpacesParams) {}
 
 export const GetSpaceParams = z.object({ spaceId: ObjectId });
 export type GetSpaceParams = z.infer<typeof GetSpaceParams>
@@ -54,8 +55,8 @@ export class UpdateSpaceBodyDto extends createZodDto(UpdateSpaceBody) {}
 
 export const AddMembersBody = z.object({ emails: z.array(z.email()) });
 export type AddMembersBody = z.infer<typeof AddMembersBody>
-export class AddMembersBodyDto extends createZodDto(AddMembersBody) { }
+export class AddMembersBodyDto extends createZodDto(AddMembersBody) {}
 
 export const RemoveUserParams = GetSpaceParams.extend({ memberEmail: z.email() });
 export type RemoveUserParams = z.infer<typeof RemoveUserParams>
-export class RemoveUserParamsDto extends createZodDto(RemoveUserParams) { }
+export class RemoveUserParamsDto extends createZodDto(RemoveUserParams) {}

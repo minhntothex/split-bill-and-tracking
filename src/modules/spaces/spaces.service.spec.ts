@@ -7,10 +7,19 @@ import { SpaceModel } from '../database/schemas/spaces.schema';
 import { Space } from './spaces.dtos';
 import { SpacesService } from './spaces.service';
 
+import { InviteToken } from '../../utils/inviteToken';
+
 jest.mock('../../utils/nextToken', () => ({
     NextToken: {
         buildQueryFromToken: jest.fn(() => ({ $or: [] })),
         fromDocument: jest.fn(() => 'mockToken'),
+    },
+}));
+
+jest.mock('../../utils/inviteToken', () => ({
+    InviteToken: {
+        create: jest.fn(() => 'token'),
+        verify: jest.fn(),
     },
 }));
 
@@ -54,7 +63,7 @@ function makeDoc(overriden: Record<string, unknown> = {})
 
 describe('SpacesService', () => 
 {
-    let service: SpacesService;
+    let service: jest.Mocked<SpacesService>;
     let model: jest.Mocked<Model<SpaceModel>>;
 
     beforeEach(async () => 
@@ -79,6 +88,14 @@ describe('SpacesService', () =>
     });
 
     afterEach(() => jest.clearAllMocks());
+
+    // ===========================================================
+    // ✅ service
+    // ===========================================================
+    it('service should be defined', () => 
+    {
+        expect(service).toBeDefined();
+    });
 
     // ===========================================================
     // ✅ get()
@@ -283,6 +300,13 @@ describe('SpacesService', () =>
             await expect(service.addMembers(spaceId, ['a@b.com'], 'a@b.com')).rejects.toThrow(ConflictException);
         });
 
+        it('throws when adding duplicate members', async () => 
+        {
+            const doc = makeDoc();
+            model.findById.mockResolvedValue(doc);
+            await expect(service.addMembers(doc.toObject()._id, ['b@b.com'], 'a@b.com')).rejects.toThrow(ConflictException);
+        });
+
         it('adds new members and saves', async () => 
         {
             const doc = makeDoc();
@@ -334,7 +358,7 @@ describe('SpacesService', () =>
             await expect(service.removeMember(doc.toObject()._id, 'c@b.com', 'a@b.com')).rejects.toThrow(BadRequestException);
         });
 
-        it('removes a new member and saves', async () => 
+        it('removes a member and saves', async () => 
         {
             const doc = makeDoc();
             model.findById.mockResolvedValue(doc);
@@ -376,6 +400,103 @@ describe('SpacesService', () =>
             expect(doc.set).toHaveBeenCalledWith({ active: true });
             expect(doc).toMatchObject({ active: true });
             expect(doc.toObject().closedAt).toBe(undefined);
+        });
+    });
+
+    // ===========================================================
+    // ✅ generateInviteToken()
+    // ===========================================================
+    describe('generateInviteToken', () => 
+    {
+        it('throws when the space does not exist', async () => 
+        {
+            model.findById.mockResolvedValue(null);
+            await expect(service.generateInviteToken(new Types.ObjectId(), 'a@b.com')).rejects.toThrow(NotFoundException);
+        });
+
+        it('throws when user does not own the space', async () => 
+        {
+            const doc = makeDoc();
+            model.findById.mockResolvedValue(doc);
+            await expect(service.generateInviteToken(doc.toObject()._id, 'b@b.com')).rejects.toThrow(ForbiddenException);
+        });
+
+        it('throws when user is not a member of the space', async () => 
+        {
+            const doc = makeDoc();
+            model.findById.mockResolvedValue(doc);
+            await expect(service.generateInviteToken(doc.toObject()._id, 'c@b.com')).rejects.toThrow(ForbiddenException);
+        });
+
+        it('throws when generating an invite token for a closed space', async () => 
+        {
+            const doc = makeDoc({ active: false, closedAt: new Date() });
+            model.findById.mockResolvedValue(doc);
+            await expect(service.generateInviteToken(doc.toObject()._id, 'a@b.com')).rejects.toThrow(BadRequestException);
+        });
+
+        it('generates an invite token', async () => 
+        {
+            const doc = makeDoc();
+            model.findById.mockResolvedValue(doc);
+            
+            await service.generateInviteToken(doc.toObject()._id, 'a@b.com');
+            expect(doc.set).toHaveBeenCalledWith({
+                inviteToken: expect.any(String),
+            });
+        });
+    });
+
+    // ===========================================================
+    // ✅ join()
+    // ===========================================================
+    describe('join', () => 
+    {
+        it('throws when the space does not exist', async () => 
+        {
+            (InviteToken.verify as jest.Mock).mockReturnValue({ spaceId: new Types.ObjectId() });
+            model.findById.mockResolvedValue(null);
+
+            await expect(service.join('token', 'a@b.com')).rejects.toThrow(NotFoundException);
+        });
+
+        it('throws when the space is malformed', async () => 
+        {
+            const doc = makeDoc({ name: 1 });
+            (InviteToken.verify as jest.Mock).mockReturnValue({ spaceId: doc.toObject()._id });
+            model.findById.mockResolvedValue(doc);
+
+            await expect(service.join('token', 'a@b.com')).rejects.toThrow(NotFoundException);
+        });
+
+        it('throws when the space is not active', async () => 
+        {
+            const doc = makeDoc({ active: false, closedAt: new Date() });
+            (InviteToken.verify as jest.Mock).mockReturnValue({ spaceId: doc.toObject()._id });
+            model.findById.mockResolvedValue(doc);
+
+            await expect(service.join('token', 'a@b.com')).rejects.toThrow(BadRequestException);
+        });
+
+        it('throws when the user is already a member', async () => 
+        {
+            const doc = makeDoc();
+            (InviteToken.verify as jest.Mock).mockReturnValue({ spaceId: doc.toObject()._id });
+            model.findById.mockResolvedValue(doc);
+
+            await expect(service.join('token', 'b@b.com')).rejects.toThrow(ConflictException);
+        });
+
+        it('joins the space', async () => 
+        {
+            const doc = makeDoc();
+            (InviteToken.verify as jest.Mock).mockReturnValue({ spaceId: doc.toObject()._id });
+            model.findById.mockResolvedValue(doc);
+
+            await service.join('token', 'c@b.com');
+            expect(doc.set).toHaveBeenCalledWith({
+                members: expect.arrayContaining([{ email: 'c@b.com', role: 'member', addedBy: 'a@b.com', joinedAt: expect.any(Date) }]),
+            });
         });
     });
 });
