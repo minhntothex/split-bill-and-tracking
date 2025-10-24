@@ -3,11 +3,11 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { Model, Types } from 'mongoose';
 
-import { SpaceModel } from '../database/schemas/spaces.schema';
-import { Space } from './spaces.dtos';
-import { SpacesService } from './spaces.service';
+import { SpaceModel } from '../../../database/schemas/spaces.schema';
+import { Space } from '../../spaces.dtos';
+import { SpacesService } from '../../spaces.service';
 
-import { InviteToken } from '../../utils/inviteToken';
+import { InviteToken } from '../../../../utils/inviteToken';
 
 jest.mock('../../utils/nextToken', () => ({
     NextToken: {
