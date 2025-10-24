@@ -55,14 +55,14 @@ export class SpacesController
         return await this.spacesService.leave(spaceId, requester);
     }
 
-    @Post(':spaceId/add-members')
+    @Post(':spaceId/members')
     @HttpCode(204)
     async addMembers(@Requester() requester: string, @Param() { spaceId }: GetSpaceParamsDto, @Body() { emails }: AddMembersBodyDto)
     {
         return await this.spacesService.addMembers(spaceId, emails, requester);
     }
 
-    @Delete(':spaceId/member/:memberEmail/remove')
+    @Delete(':spaceId/members/:memberEmail')
     @HttpCode(204)
     async removeMember(@Requester() requester: string, @Param() { spaceId, memberEmail }: RemoveUserParamsDto)
     {
@@ -72,6 +72,12 @@ export class SpacesController
     @Post(':spaceId/invite-link')
     async generateInviteLink(@Requester() requester: string, @Param() { spaceId }: GetSpaceParamsDto)
     {
+        return await this.spacesService.generateInviteToken(spaceId, requester);
+    }
 
+    @Get('join/:inviteToken')
+    async join(@Requester() requester: string, @Param('inviteToken') inviteToken: string)
+    {
+        return await this.spacesService.join(inviteToken, requester);
     }
 }
