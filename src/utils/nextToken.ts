@@ -1,11 +1,11 @@
-import { FilterQuery, Types } from 'mongoose';
+import { FilterQuery } from 'mongoose';
 import { z } from 'zod';
 
+import { ObjectId } from '../modules/database/database.types';
+
 const NextTokenPayload = z.object({
-    updatedAt: z.iso.datetime(),
-    id: z.string().refine(val => Types.ObjectId.isValid(val), {
-        message: 'Invalid ObjectId',
-    }),
+    updatedAt: z.union([z.iso.datetime(), z.date()]).transform(date => new Date(date)),
+    _id: ObjectId,
 });
 
 export type NextTokenPayload = z.infer<typeof NextTokenPayload>;
@@ -17,7 +17,7 @@ export class NextToken
     */
     static encode(payload: NextTokenPayload): string 
     {
-        const json = JSON.stringify(payload);
+        const json = JSON.stringify({ updatedAt: payload.updatedAt.toISOString(), _id: payload._id.toString() });
         return Buffer.from(json, 'utf-8').toString('base64url'); // url-safe
     }
 
@@ -29,7 +29,7 @@ export class NextToken
         try 
         {
             const json = Buffer.from(token, 'base64url').toString('utf-8');
-            const parsed: unknown = JSON.parse(json);
+            const parsed = JSON.parse(json);
             return NextTokenPayload.parse(parsed);
         }
         catch 
@@ -39,30 +39,17 @@ export class NextToken
     }
 
     /**
-     * Generate a token from a Mongoose document.
-     */
-    static fromDocument(doc: { _id: Types.ObjectId; updatedAt: Date }): string 
-    {
-        return this.encode({
-            id: doc._id.toString(),
-            updatedAt: doc.updatedAt.toISOString(),
-        });
-    }
-
-    /**
    * Builds a MongoDB pagination filter from a nextToken (for cursor-based paging).
    */
-    static buildQueryFromToken(token?: undefined): undefined
-    static buildQueryFromToken<T>(token: string): FilterQuery<T>
-    static buildQueryFromToken<T>(token?: string): FilterQuery<T> | undefined
+    static buildQueryFromToken<T>(token?: string): FilterQuery<T>
     {
         if (!token) return {};
 
-        const { updatedAt, id } = this.decode(token);
+        const { updatedAt, _id } = this.decode(token);
         return {
             $or: [
                 { updatedAt: { $lt: updatedAt } },
-                { updatedAt, _id: { $lte: new Types.ObjectId(id) } },
+                { updatedAt, _id: { $lte: _id } },
             ],
         };
     }

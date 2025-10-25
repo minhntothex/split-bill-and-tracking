@@ -52,10 +52,13 @@ export class SpaceService
         const results = hasNextPage ? docs.slice(0, take) : docs;
         
         const lastDoc = docs[docs.length - 1];
-        const newNextToken = hasNextPage ? NextToken.fromDocument(lastDoc) : undefined;
+        const newNextToken = hasNextPage ? NextToken.encode(lastDoc) : undefined;
 
         const spaces = results.flatMap(doc => flatMapParseOrDiscard(Space)(doc.toObject()));
-        return { items: spaces, nextToken: newNextToken };
+        const result: { items: Space[], nextToken?: string } = { items: spaces };
+        if (newNextToken) { result.nextToken = newNextToken; }
+
+        return result;
     }
 
     async getOne(spaceId: Types.ObjectId, requester: string)
@@ -196,7 +199,7 @@ export class SpaceService
         const doc = await this.readSpaceOrThrow({ spaceId, requester, owned: true });
         if (!doc.toObject().active) { throw new BadRequestException('Cannot generate an invite token for a closed space'); }
 
-        const inviteToken = InviteToken.create(spaceId.toString());
+        const inviteToken = InviteToken.create(spaceId);
         doc.set({ inviteToken });
         await doc.validate();
         await doc.save();
