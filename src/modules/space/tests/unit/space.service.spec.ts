@@ -3,9 +3,9 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { Model, Types } from 'mongoose';
 
-import { SpaceModel } from '../../../database/schemas/spaces.schema';
-import { Space } from '../../spaces.dtos';
-import { SpacesService } from '../../spaces.service';
+import { SpaceModel } from '../../../database/schemas/space.schema';
+import { Space } from '../../space.dtos';
+import { SpaceService } from '../../space.service';
 
 import { InviteToken } from '../../../../utils/inviteToken';
 
@@ -61,16 +61,16 @@ function makeDoc(overriden: Record<string, unknown> = {})
     };
 }
 
-describe('SpacesService', () => 
+describe('SpaceService', () => 
 {
-    let service: jest.Mocked<SpacesService>;
+    let service: jest.Mocked<SpaceService>;
     let model: jest.Mocked<Model<SpaceModel>>;
 
     beforeEach(async () => 
     {
         const module = await Test.createTestingModule({
             providers: [
-                SpacesService,
+                SpaceService,
                 {
                     provide: getModelToken(SpaceModel.name),
                     useValue: {
@@ -83,7 +83,7 @@ describe('SpacesService', () =>
             ],
         }).compile();
 
-        service = module.get(SpacesService);
+        service = module.get(SpaceService);
         model = module.get(getModelToken(SpaceModel.name));
     });
 

@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-
-import { SpacesController } from './spaces.controller';
-import { SpacesService } from './spaces.service';
 import { Types } from 'mongoose';
 
-describe('SpacesController', () => 
+import { SpaceController } from '../../space.controller';
+import { SpaceService } from '../../space.service';
+
+describe('SpaceController', () => 
 {
-    let controller: SpacesController;
+    let controller: SpaceController;
     let service = {
         get: jest.fn(),
         getOne: jest.fn(),
@@ -24,10 +24,10 @@ describe('SpacesController', () =>
     beforeEach(async () => 
     {
         const module: TestingModule = await Test.createTestingModule({
-            controllers: [SpacesController],
+            controllers: [SpaceController],
             providers: [
                 {
-                    provide: SpacesService,
+                    provide: SpaceService,
                     useValue: {
                         get: jest.fn(),
                         getOne: jest.fn(),
@@ -45,8 +45,8 @@ describe('SpacesController', () =>
             ],
         }).compile();
 
-        controller = module.get<SpacesController>(SpacesController);
-        service = module.get(SpacesService);
+        controller = module.get<SpaceController>(SpaceController);
+        service = module.get(SpaceService);
     });
 
     // ===========================================================

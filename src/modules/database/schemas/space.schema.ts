@@ -1,7 +1,7 @@
 import { Prop, Schema } from '@nestjs/mongoose';
 
 import { createSchema } from '../../../utils/createSchema';
-import type { SpaceMember as IMember, Space as ISpace } from '../../spaces/spaces.dtos';
+import type { SpaceMember as IMember, Space as ISpace } from '../../space/space.dtos';
 
 @Schema({ _id: false })
 class MemberSchema

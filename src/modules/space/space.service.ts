@@ -3,15 +3,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import z from 'zod';
 
-import { SpaceModel } from '../database/schemas/spaces.schema';
-import { CreateSpaceBody, GetSpacesParams, Space, SpaceMember, UpdateSpaceBody } from './spaces.dtos';
+import { SpaceModel } from '../database/schemas/space.schema';
+import { CreateSpaceBody, GetSpacesParams, Space, SpaceMember, UpdateSpaceBody } from './space.dtos';
 
 import { flatMapParseOrDiscard } from '../../utils/flatMapParseOrDiscard';
 import { InviteToken } from '../../utils/inviteToken';
 import { NextToken } from '../../utils/nextToken';
 
 @Injectable()
-export class SpacesService 
+export class SpaceService 
 {
     constructor(@InjectModel(SpaceModel.name) private spaceModel: Model<SpaceModel>) { }
 

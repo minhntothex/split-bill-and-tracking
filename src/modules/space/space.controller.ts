@@ -1,14 +1,14 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
 
 import { Requester } from '../../decorators/requester.decorator';
 
-import { AddMembersBodyDto, CreateSpaceBodyDto, GetSpaceParamsDto, GetSpacesParamsDto, RemoveUserParamsDto, UpdateSpaceBodyDto } from './spaces.dtos';
-import { SpacesService } from './spaces.service';
+import { AddMembersBodyDto, CreateSpaceBodyDto, GetSpaceParamsDto, GetSpacesParamsDto, RemoveUserParamsDto, UpdateSpaceBodyDto } from './space.dtos';
+import { SpaceService } from './space.service';
 
 @Controller('spaces')
-export class SpacesController 
+export class SpaceController 
 {
-    constructor(private readonly spacesService: SpacesService) { }
+    constructor(private readonly spacesService: SpaceService) { }
 
     @Get()
     async get(@Requester() requester: string, @Param() params: GetSpacesParamsDto)

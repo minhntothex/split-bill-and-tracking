@@ -7,7 +7,7 @@ import { AppService } from './app.service';
 
 import { BillsModule } from './modules/bills/bills.module';
 import { DatabaseModule } from './modules/database/database.module';
-import { SpacesModule } from './modules/spaces/spaces.module';
+import { SpaceModule } from './modules/space/space.module';
 import { UsersModule } from './modules/users/users.module';
 import { ConfigModule } from '@nestjs/config';
 
@@ -15,7 +15,7 @@ import { ConfigModule } from '@nestjs/config';
     imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         DatabaseModule,
-        SpacesModule, UsersModule, BillsModule,
+        SpaceModule, UsersModule, BillsModule,
     ],
     controllers: [AppController],
     providers: [
