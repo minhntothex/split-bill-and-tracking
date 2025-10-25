@@ -1,14 +1,14 @@
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 
-const INVITE_SECRET = process.env.TOKEN_SECRET ?? 'sb&t-app-secret';
+const SECRET = process.env.JWT_SECRET ?? 'sb&t-app-secret';
 
 export class InviteToken 
 {
     static create(objId_spaceId: Types.ObjectId): string 
     {
         const spaceId = objId_spaceId.toString();
-        return jwt.sign({ spaceId }, INVITE_SECRET);
+        return jwt.sign({ spaceId }, SECRET);
     }
 
     static verify(token: string): { spaceId: Types.ObjectId } 
@@ -16,7 +16,7 @@ export class InviteToken
         let payload: { spaceId?: string };
         try 
         {
-            payload = jwt.verify(token, INVITE_SECRET) as typeof payload;
+            payload = jwt.verify(token, SECRET) as typeof payload;
         }
         catch(error) 
         {

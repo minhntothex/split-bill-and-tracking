@@ -1,15 +1,16 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+import { JwtMiddleware } from './middlewares/jwt.middleware';
 import { BillsModule } from './modules/bills/bills.module';
 import { DatabaseModule } from './modules/database/database.module';
 import { SpaceModule } from './modules/space/space.module';
 import { UsersModule } from './modules/users/users.module';
-import { ConfigModule } from '@nestjs/config';
 
 @Module({
     imports: [
@@ -38,7 +39,7 @@ export class AppModule implements NestModule
 {
     configure(consumer: MiddlewareConsumer) 
     {
-        // consumer.apply(JwtMiddleware).forRoutes('*');
+        consumer.apply(JwtMiddleware).forRoutes('*');
     }
 
 }

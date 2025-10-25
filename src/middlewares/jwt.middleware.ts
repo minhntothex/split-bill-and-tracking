@@ -1,31 +1,30 @@
 import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
-import { NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+
+const SECRET = process.env.JWT_SECRET ?? 'sb&t-app-secret';
 
 @Injectable()
 export class JwtMiddleware implements NestMiddleware 
 {
     use(req: Request, res: Response, next: NextFunction)
     {
-        next();
+        const authHeader = req.headers.authorization;
+        if (!authHeader) { throw new UnauthorizedException(); }
 
-        // const authHeader: string | undefined = req.headers['authorization'];
-        // if (!authHeader) { throw new UnauthorizedException(); }
-
-        // const token = authHeader.split(' ')[1]; // "Bearer <token>"
-        // if (!token) throw new UnauthorizedException();
+        const token = authHeader.split(' ')[1]; // "Bearer <token>"
+        if (!token) { throw new UnauthorizedException(); }
         
-        // try
-        // {
-        //     const payload = jwt.verify(token, process.env.JWT_SECRET!);
-        //     req['jwt'] = payload;
-        // }
-        // catch (error: unknown)
-        // {
-        //     console.log(error);
-        //     throw new UnauthorizedException();
-        // }
+        try
+        {
+            jwt.verify(token, SECRET);
+        }
+        catch (error: unknown)
+        {
+            console.error(error);
+            throw new UnauthorizedException();
+        }
 
-        // next();
+        next();
     }
 }
