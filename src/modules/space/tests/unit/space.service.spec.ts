@@ -1,70 +1,51 @@
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
 
 import { SpaceModel } from '../../../database/schemas/space.schema';
-import { Space } from '../../space.dtos';
 import { SpaceService } from '../../space.service';
 
 import { InviteToken } from '../../../../utils/inviteToken';
+import { createRecord } from '../utils/space.test.fixture';
 
-jest.mock('../../utils/nextToken', () => ({
+jest.mock('../../../../utils/nextToken', () => ({
     NextToken: {
         buildQueryFromToken: jest.fn(() => ({ $or: [] })),
-        fromDocument: jest.fn(() => 'mockToken'),
+        encode: jest.fn(() => 'mockToken'),
     },
 }));
 
-jest.mock('../../utils/inviteToken', () => ({
+jest.mock('../../../../utils/inviteToken', () => ({
     InviteToken: {
         create: jest.fn(() => 'token'),
         verify: jest.fn(),
     },
 }));
 
-function makeSpace(overriden: Partial<Space> = {}): Space
-{
-    const date = new Date();
-
-    return {
-        _id: new Types.ObjectId(),
-        name: 'Fake Space',
-        description: 'This is a fake space',
-        icon: 'icon_1',
-        categories: ['category_1', 'category_2'],
-        members: [
-            { email: 'a@b.com', role: 'owner', addedBy: 'a@b.com', joinedAt: date },
-            { email: 'b@b.com', role: 'member', addedBy: 'a@b.com', joinedAt: date },
-        ],
-        createdAt: date,
-        updatedAt: date,
-        active: true,
-        ...overriden,
-    };
-}
-
-function makeDoc(overriden: Record<string, unknown> = {})
-{
-    let space = makeSpace(overriden);
-
-    return {
-        ...space,
-        set: jest.fn().mockImplementation((data: Partial<Space>) => 
-        {
-            space = { ...space, ...data };
-        }),
-        markModified: jest.fn(),
-        validate: jest.fn(),
-        save: jest.fn(),
-        toObject: jest.fn(() => space),
-    };
-}
-
 describe('SpaceService', () => 
 {
-    let service: jest.Mocked<SpaceService>;
-    let model: jest.Mocked<Model<SpaceModel>>;
+    let service: {
+        readSpaceOrThrow: SpaceService['readSpaceOrThrow'],
+        get: SpaceService['get'],
+        getOne: SpaceService['getOne'],
+        create: SpaceService['create'],
+        update: SpaceService['update'],
+        leave: SpaceService['leave'],
+        addMembers: SpaceService['addMembers'],
+        removeMember: SpaceService['removeMember'],
+        close: SpaceService['close'],
+        reopen: SpaceService['reopen'],
+        generateInviteToken: SpaceService['generateInviteToken'],
+        join: SpaceService['join'],
+    };
+
+    let model = {
+        findById: jest.fn(),
+        find: jest.fn(),
+        findOne: jest.fn(),
+        create: jest.fn(),
+    };
 
     beforeEach(async () => 
     {
@@ -73,12 +54,7 @@ describe('SpaceService', () =>
                 SpaceService,
                 {
                     provide: getModelToken(SpaceModel.name),
-                    useValue: {
-                        findById: jest.fn(),
-                        find: jest.fn(),
-                        findOne: jest.fn(),
-                        create: jest.fn(),
-                    },
+                    useValue: model,
                 },
             ],
         }).compile();
@@ -104,14 +80,14 @@ describe('SpaceService', () =>
     {
         it('returns spaces and nextToken if > take', async () => 
         {
-            const docs = [makeDoc(), makeDoc(), makeDoc()];
-            (model.find as jest.Mock).mockReturnValue({
+            const docs = [createRecord(), createRecord(), createRecord()];
+            model.find.mockReturnValue({
                 sort: () => ({ limit: () => Promise.resolve(docs) }),
             });
 
             const result = await service.get({ take: 2, categories: ['category_1'] }, 'a@b.com');
-            // eslint-disable-next-line @typescript-eslint/unbound-method
-            expect(model.find as jest.Mock).toHaveBeenCalledWith({
+             
+            expect(model.find).toHaveBeenCalledWith({
                 active: true,
                 'members.email': 'a@b.com',
                 categories: { $in: ['category_1'] },
@@ -120,10 +96,27 @@ describe('SpaceService', () =>
             expect(result.nextToken).toBe('mockToken');
         });
 
+        it('returns spaces and no nextToken if <= take', async () => 
+        {
+            const docs = [createRecord(), createRecord(), createRecord()];
+            model.find.mockReturnValue({
+                sort: () => ({ limit: () => Promise.resolve(docs) }),
+            });
+
+            const result = await service.get({ take: 3 }, 'a@b.com');
+             
+            expect(model.find).toHaveBeenCalledWith({
+                active: true,
+                'members.email': 'a@b.com',
+            });
+            expect(result.items.length).toBe(3);
+            expect(result.nextToken).toBeUndefined();
+        });
+
         it('returns only items if <= take', async () => 
         {
-            const docs = [makeDoc()];
-            (model.find as jest.Mock).mockReturnValue({
+            const docs = [createRecord()];
+            model.find.mockReturnValue({
                 sort: () => ({ limit: () => Promise.resolve(docs) }),
             });
 
@@ -133,8 +126,8 @@ describe('SpaceService', () =>
 
         it('returns paginated spaces based on nextToken', async () => 
         {
-            const docs = [makeDoc(), makeDoc(), makeDoc()];
-            (model.find as jest.Mock).mockReturnValue({
+            const docs = [createRecord(), createRecord(), createRecord()];
+            (model.find).mockReturnValue({
                 sort: () => ({ limit: () => Promise.resolve(docs) }),
             });
 
@@ -150,7 +143,7 @@ describe('SpaceService', () =>
     {
         it('returns a space', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
 
             const result = await service.getOne(doc.toObject()._id, 'a@b.com');
@@ -159,7 +152,7 @@ describe('SpaceService', () =>
 
         it('throws when getting a malformed space', async () => 
         {
-            const doc = makeDoc({ members: {} });
+            const doc = createRecord({ members: {} });
             model.findById.mockResolvedValue(doc);
 
             await expect(service.getOne(doc.toObject()._id, 'a@b.com')).rejects.toThrow(NotFoundException);
@@ -173,8 +166,8 @@ describe('SpaceService', () =>
     {
         it.each([undefined, ['b@b.com']])('#%# - creates and returns parsed space', async (members) => 
         {
-            const doc = makeDoc();
-            model.create.mockResolvedValue(doc as any);
+            const doc = createRecord();
+            model.create.mockResolvedValue(doc);
             
             const space = doc.toObject();
             const createSpaceBody = {
@@ -198,7 +191,7 @@ describe('SpaceService', () =>
     {
         it('throws when modifying a closed space', async () => 
         {
-            const doc = makeDoc({ active: false, closedAt: new Date() });
+            const doc = createRecord({ active: false, closedAt: new Date() });
             model.findById.mockResolvedValue(doc);
 
             await expect(service.update(doc.toObject()._id, { name: 'New' }, 'a@b.com')).rejects.toThrow(BadRequestException);
@@ -206,7 +199,7 @@ describe('SpaceService', () =>
 
         it('updates and returns space', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
 
             const result = await service.update(doc.toObject()._id, { name: 'New' }, 'a@b.com');
@@ -222,7 +215,7 @@ describe('SpaceService', () =>
     {
         it('throws if member not found', async () => 
         {
-            const doc = makeDoc({ members: [{ email: 'x@y.com', role: 'owner', addedBy: 'x@y.com', joinedAt: new Date() }] });
+            const doc = createRecord({ members: [{ email: 'x@y.com', role: 'owner', addedBy: 'x@y.com', joinedAt: new Date() }] });
             model.findById.mockResolvedValue(doc);
 
             await expect(service.leave(doc.toObject()._id, 'a@b.com')).rejects.toThrow(ForbiddenException);
@@ -230,7 +223,7 @@ describe('SpaceService', () =>
 
         it('transfers ownership if owner leaves', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
 
             const space = doc.toObject();
@@ -246,7 +239,7 @@ describe('SpaceService', () =>
 
         it('throws if owner leaves alone', async () => 
         {
-            const doc = makeDoc({ members: [{ email: 'a@b.com', role: 'owner', addedBy: 'a@b.com', joinedAt: new Date() }] });
+            const doc = createRecord({ members: [{ email: 'a@b.com', role: 'owner', addedBy: 'a@b.com', joinedAt: new Date() }] });
             model.findById.mockResolvedValue(doc);
 
             await expect(service.leave(doc.toObject()._id, 'a@b.com')).rejects.toThrow(BadRequestException);
@@ -254,7 +247,7 @@ describe('SpaceService', () =>
 
         it('throws when leaving a closed space', async () => 
         {
-            const doc = makeDoc({ active: false, closedAt: new Date() });
+            const doc = createRecord({ active: false, closedAt: new Date() });
             model.findById.mockResolvedValue(doc);
 
             await expect(service.leave(doc.toObject()._id, 'a@b.com')).rejects.toThrow(BadRequestException);
@@ -262,7 +255,7 @@ describe('SpaceService', () =>
 
         it('throws when leaving as a member', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
 
             await service.leave(doc.toObject()._id, 'b@b.com');
@@ -288,7 +281,7 @@ describe('SpaceService', () =>
 
         it('throws when adding members to a closed space', async () => 
         {
-            const doc = makeDoc({ active: false, closedAt: new Date() });
+            const doc = createRecord({ active: false, closedAt: new Date() });
             model.findById.mockResolvedValue(doc);
 
             await expect(service.addMembers(doc.toObject()._id, ['c@b.com'], 'a@b.com')).rejects.toThrow(BadRequestException);
@@ -302,14 +295,14 @@ describe('SpaceService', () =>
 
         it('throws when adding duplicate members', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
             await expect(service.addMembers(doc.toObject()._id, ['b@b.com'], 'a@b.com')).rejects.toThrow(ConflictException);
         });
 
         it('adds new members and saves', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
 
             await service.addMembers(doc.toObject()._id, ['c@b.com', 'd@b.com'], 'a@b.com');
@@ -344,7 +337,7 @@ describe('SpaceService', () =>
 
         it('throws when removing members to a closed space', async () => 
         {
-            const doc = makeDoc({ active: false, closedAt: new Date() });
+            const doc = createRecord({ active: false, closedAt: new Date() });
             model.findById.mockResolvedValue(doc);
 
             await expect(service.removeMember(doc.toObject()._id, 'b@b.com', 'a@b.com')).rejects.toThrow(BadRequestException);
@@ -352,7 +345,7 @@ describe('SpaceService', () =>
 
         it('throws when trying to remove a member is not in a space.', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
 
             await expect(service.removeMember(doc.toObject()._id, 'c@b.com', 'a@b.com')).rejects.toThrow(BadRequestException);
@@ -360,7 +353,7 @@ describe('SpaceService', () =>
 
         it('removes a member and saves', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
 
             await service.removeMember(doc.toObject()._id, 'b@b.com', 'a@b.com');
@@ -375,7 +368,7 @@ describe('SpaceService', () =>
     {
         it.each(['close', 'reopen'] as const)('throws when %sing a space not own', async (fn) =>
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
             
             await expect(service[fn](doc.toObject()._id, 'x@y.com')).rejects.toThrow(ForbiddenException);
@@ -383,7 +376,7 @@ describe('SpaceService', () =>
 
         it('closes a space', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
 
             await service.close(doc.toObject()._id, 'a@b.com');
@@ -393,7 +386,7 @@ describe('SpaceService', () =>
 
         it('Reopens a space', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
 
             await service.reopen(doc.toObject()._id, 'a@b.com');
@@ -416,28 +409,28 @@ describe('SpaceService', () =>
 
         it('throws when user does not own the space', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
             await expect(service.generateInviteToken(doc.toObject()._id, 'b@b.com')).rejects.toThrow(ForbiddenException);
         });
 
         it('throws when user is not a member of the space', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
             await expect(service.generateInviteToken(doc.toObject()._id, 'c@b.com')).rejects.toThrow(ForbiddenException);
         });
 
         it('throws when generating an invite token for a closed space', async () => 
         {
-            const doc = makeDoc({ active: false, closedAt: new Date() });
+            const doc = createRecord({ active: false, closedAt: new Date() });
             model.findById.mockResolvedValue(doc);
             await expect(service.generateInviteToken(doc.toObject()._id, 'a@b.com')).rejects.toThrow(BadRequestException);
         });
 
         it('generates an invite token', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             model.findById.mockResolvedValue(doc);
             
             await service.generateInviteToken(doc.toObject()._id, 'a@b.com');
@@ -462,7 +455,7 @@ describe('SpaceService', () =>
 
         it('throws when the space is malformed', async () => 
         {
-            const doc = makeDoc({ name: 1 });
+            const doc = createRecord({ name: 1 });
             (InviteToken.verify as jest.Mock).mockReturnValue({ spaceId: doc.toObject()._id });
             model.findById.mockResolvedValue(doc);
 
@@ -471,7 +464,7 @@ describe('SpaceService', () =>
 
         it('throws when the space is not active', async () => 
         {
-            const doc = makeDoc({ active: false, closedAt: new Date() });
+            const doc = createRecord({ active: false, closedAt: new Date() });
             (InviteToken.verify as jest.Mock).mockReturnValue({ spaceId: doc.toObject()._id });
             model.findById.mockResolvedValue(doc);
 
@@ -480,7 +473,7 @@ describe('SpaceService', () =>
 
         it('throws when the user is already a member', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             (InviteToken.verify as jest.Mock).mockReturnValue({ spaceId: doc.toObject()._id });
             model.findById.mockResolvedValue(doc);
 
@@ -489,7 +482,7 @@ describe('SpaceService', () =>
 
         it('joins the space', async () => 
         {
-            const doc = makeDoc();
+            const doc = createRecord();
             (InviteToken.verify as jest.Mock).mockReturnValue({ spaceId: doc.toObject()._id });
             model.findById.mockResolvedValue(doc);
 

@@ -2,8 +2,7 @@ import { Types } from 'mongoose';
 import z from 'zod';
 
 export const ObjectId = z
-    .instanceof(Types.ObjectId)
-    .or(z.string().regex(/^[0-9a-fA-F]{24}$/))
+    .union([z.string().regex(/^[0-9a-fA-F]{24}$/), z.instanceof(Types.ObjectId)])
     .transform(value => value instanceof Types.ObjectId ? value : new Types.ObjectId(value));
 
 export const SystemFields = z.object({
