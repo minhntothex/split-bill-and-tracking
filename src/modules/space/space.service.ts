@@ -4,7 +4,7 @@ import { FilterQuery, Model, Types } from 'mongoose';
 import z from 'zod';
 
 import { SpaceModel } from '../database/schemas/space.schema';
-import { CreateSpaceBody, GetSpacesParams, Space, SpaceMember, UpdateSpaceBody } from './space.dtos';
+import { CreateSpaceBody, GetSpaceQuery, Space, SpaceMember, UpdateSpaceBody } from './space.dtos';
 
 import { flatMapParseOrDiscard } from '../../utils/flatMapParseOrDiscard';
 import { InviteToken } from '../../utils/inviteToken';
@@ -31,22 +31,22 @@ export class SpaceService
         return doc;
     }
 
-    async get(params: GetSpacesParams, requester: string)
+    async get(query: GetSpaceQuery, requester: string)
     {
         const requesterEmail = z.email().parse(requester);
 
-        const { categories, active = true, take = 10, nextToken } = params;
+        const { categories, active = true, take = 10, nextToken } = query;
 
-        const query: FilterQuery<Space> = { active, 'members.email': requesterEmail };
+        const filterQuery: FilterQuery<Space> = { active, 'members.email': requesterEmail };
         if (nextToken) 
         {
             const { $or } = NextToken.buildQueryFromToken<Space>(nextToken);
-            query.$or = $or;
+            filterQuery.$or = $or;
         }
 
-        if (categories) { query.categories = { $in: categories }; }
+        if (categories) { filterQuery.categories = { $in: categories }; }
 
-        const docs = await this.spaceModel.find(query).sort({ updatedAt: -1 }).limit(take + 1);
+        const docs = await this.spaceModel.find(filterQuery).sort({ updatedAt: -1 }).limit(take + 1);
 
         const hasNextPage = docs.length > take;
         const results = hasNextPage ? docs.slice(0, take) : docs;

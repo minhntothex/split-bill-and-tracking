@@ -8,13 +8,10 @@ class MemberSchema
 {
     @Prop({ type: String, required: true })
         email: IMember['email'];
-    
     @Prop({ type: String, required: true, enum: ['owner', 'member'] })
         role: IMember['role'];
-
     @Prop({ type: String, required: true })
         addedBy: IMember['addedBy'];
-
     @Prop({ type: Date, required: true })
         joinedAt: IMember['joinedAt'];
 }
@@ -22,7 +19,7 @@ class MemberSchema
 @Schema({ timestamps: true })
 export class SpaceModel
 {
-    @Prop({ type: String, unique: true, required: true, minLength: 3, maxLength: 20 })
+    @Prop({ type: String, required: true, minLength: 3, maxLength: 20 })
         name: ISpace['name'];
     @Prop({ type: String })
         description?: ISpace['description'];

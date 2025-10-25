@@ -30,12 +30,12 @@ export const Space = SystemFields.extend({
 });
 export type Space = z.infer<typeof Space>
 
-export const GetSpacesParams = Space
+export const GetSpaceQuery = Space
     .pick({ categories: true, active: true })
     .extend({ take: z.number(), nextToken: z.string().optional() })
     .partial();
-export type GetSpacesParams = z.infer<typeof GetSpacesParams>
-export class GetSpacesParamsDto extends createZodDto(GetSpacesParams) {}
+export type GetSpaceQuery = z.infer<typeof GetSpaceQuery>
+export class GetSpacesQueryDto extends createZodDto(GetSpaceQuery) {}
 
 export const GetSpaceParams = z.object({ spaceId: ObjectId });
 export type GetSpaceParams = z.infer<typeof GetSpaceParams>
