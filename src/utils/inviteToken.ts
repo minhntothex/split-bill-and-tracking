@@ -24,8 +24,8 @@ export class InviteToken
             throw new Error('Invalid or malformed invite token');
         }
 
-        if (!payload.spaceId) throw new Error('Invalid token payload');
-        if (!Types.ObjectId.isValid(payload.spaceId)) throw new Error('Invalid token payload');
+        if (!payload.spaceId) { throw new Error('Invalid token payload'); }
+        if (!Types.ObjectId.isValid(payload.spaceId)) { throw new Error('Invalid token payload'); }
 
         return { ...payload, spaceId: new Types.ObjectId(payload.spaceId) };
     }

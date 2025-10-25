@@ -43,7 +43,7 @@ export class NextToken
    */
     static buildQueryFromToken<T>(token?: string): FilterQuery<T>
     {
-        if (!token) return {};
+        if (!token) { return {}; }
 
         const { updatedAt, _id } = this.decode(token);
         return {

@@ -29,6 +29,8 @@ export default tseslint.config(
       'brace-style': ['error', 'allman', { allowSingleLine: true }],
       quotes: ['error', 'single', { avoidEscape: true }],
       semi: ['error', 'always'],
+      curly: ["error", "all"],
+      "block-spacing": ["error", "always"],
       'max-len': ['error', { code: 255, ignoreComments: true, ignoreStrings: true }],
       'comma-dangle': ['error', 'always-multiline'],
       'object-curly-spacing': ['error', 'always'],
