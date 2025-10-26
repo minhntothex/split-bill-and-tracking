@@ -152,13 +152,12 @@ export class SpaceService
     {
         //FIXME: Ensure users are existing in db.
         const EmailSchema = z.email();
-        const requesterEmail = EmailSchema.parse(requester);
         const memberEmails = z.array(EmailSchema).parse(users);
-
-        if (memberEmails.includes(requesterEmail)) { throw new ConflictException(`${requesterEmail} is already a member`); }
 
         const doc = await this.readSpaceOrThrow({ spaceId, requester });
         if (!doc.toObject().active) { throw new BadRequestException('Cannot add members to a closed space'); }
+
+        if (memberEmails.includes(requester)) { throw new ConflictException(`${requester} is already a member`); }
         
         const joinedAt = new Date();
         const members = doc.members;
@@ -166,7 +165,7 @@ export class SpaceService
         for (const email of memberEmails)
         {
             if (memberSet.has(email)) { throw new ConflictException(`${email} is already a member`); }
-            const member: Space['members'][number] = { role: 'member', email, addedBy: requesterEmail, joinedAt };
+            const member: Space['members'][number] = { role: 'member', email, addedBy: requester, joinedAt };
             members.push(member);
             memberSet.add(email);
         }

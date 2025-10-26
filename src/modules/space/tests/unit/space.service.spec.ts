@@ -283,14 +283,14 @@ describe('SpaceService', () =>
         {
             const doc = createRecord({ active: false, closedAt: new Date() });
             model.findById.mockResolvedValue(doc);
-
             await expect(service.addMembers(doc.toObject()._id, ['c@b.com'], 'a@b.com')).rejects.toThrow(BadRequestException);
         });
 
         it('throws when user tries to add themselves', async () => 
         {
-            const spaceId = new Types.ObjectId();
-            await expect(service.addMembers(spaceId, ['a@b.com'], 'a@b.com')).rejects.toThrow(ConflictException);
+            const doc = createRecord();
+            model.findById.mockResolvedValue(doc);
+            await expect(service.addMembers(doc.toObject()._id, ['a@b.com'], 'a@b.com')).rejects.toThrow(ConflictException);
         });
 
         it('throws when adding duplicate members', async () => 
@@ -306,7 +306,6 @@ describe('SpaceService', () =>
             model.findById.mockResolvedValue(doc);
 
             await service.addMembers(doc.toObject()._id, ['c@b.com', 'd@b.com'], 'a@b.com');
-
             expect(doc.set).toHaveBeenCalledWith({
                 members: [
                     expect.objectContaining({ email: 'a@b.com', role: 'owner' }),
