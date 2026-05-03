@@ -1,3 +1,5 @@
+import { ZodError } from "zod";
+
 export type ApiErrorCode =
   | "UNAUTHORIZED"
   | "FORBIDDEN"
@@ -42,4 +44,24 @@ export function createApiErrorResponse(
     ...init,
     status: init?.status ?? getStatusForApiErrorCode(code),
   });
+}
+
+/**
+ * Formats a validation response from the first Zod issue only.
+ * If callers need aggregated validation feedback, add a separate helper.
+ */
+export function createValidationErrorResponse(
+  error: ZodError,
+  init?: ResponseInit,
+): Response {
+  const firstIssue = error.issues[0];
+  const pathPrefix =
+    firstIssue && firstIssue.path.length > 0
+      ? `${firstIssue.path.join(".")}: `
+      : "";
+  const message = firstIssue
+    ? `${pathPrefix}${firstIssue.message}`
+    : "Validation failed.";
+
+  return createApiErrorResponse("VALIDATION_ERROR", message, init);
 }
