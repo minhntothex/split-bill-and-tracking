@@ -32,6 +32,7 @@ Rules:
 
 Output:
 
+```md
 # Minimal Implementation Plan
 
 ## Issue
@@ -73,3 +74,4 @@ Minimal verification steps.
 
 ## Done Criteria
 Checkable completion criteria.
+```
