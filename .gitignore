@@ -1,6 +1,8 @@
 /node_modules
 .next
 tsconfig.tsbuildinfo
-.codex
+# .codex
 .env.*
 !.env.example
+.npm-cache
+tmp
