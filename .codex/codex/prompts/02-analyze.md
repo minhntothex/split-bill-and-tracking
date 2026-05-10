@@ -1,6 +1,5 @@
 Use:
 - context-gathering
-- repo-understanding
 - issue-analysis
 
 # 02 Analyze Prompt

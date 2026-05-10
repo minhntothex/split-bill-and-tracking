@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "jest --runInBand",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "workflow:issue": "node .codex/codex/run-workflow.js"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

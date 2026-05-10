@@ -1,6 +1,5 @@
 Use:
 - executing-plans
-- repo-understanding
 
 # 03 Plan Prompt
 
