@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "jest --runInBand",
     "typecheck": "tsc --noEmit"
   },
@@ -20,11 +21,19 @@
     "zod": "^4.4.2"
   },
   "devDependencies": {
+    "@mnx.p/eslint-config": "^1.0.0",
+    "@stylistic/eslint-plugin": "^1.5.3",
     "@types/jest": "^30.0.0",
     "@types/node": "24.7.2",
     "@types/react": "19.1.16",
     "@types/react-dom": "19.1.9",
+    "@typescript-eslint/eslint-plugin": "^6.13.2",
+    "@typescript-eslint/parser": "^6.13.2",
+    "eslint": "^8.40.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.0.1",
     "jest": "^30.3.0",
+    "prettier": "^3.1.0",
     "ts-jest": "^29.4.9",
     "typescript": "5.9.3"
   }
