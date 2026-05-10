@@ -56,7 +56,7 @@ const steps = [
     name: "review",
     model: "gpt-5.4",
     promptFile: "05-review.md",
-    outputFile: "dev_05-review.md",
+    // outputFile: "dev_05-review.md",
     enabled: true,
   },
 ];
